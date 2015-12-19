@@ -29,7 +29,7 @@ func simplePostEndpoint(w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(body)
 }
 
-func NewAPI(forceSSLMiddleware *ForceSSLMiddleware) http.Handler {
+func NewAPI(forceSSLMiddleware *Middleware) http.Handler {
 	api := rest.NewApi()
 	api.Use(forceSSLMiddleware)
 	router, _ := rest.MakeRouter(
@@ -41,7 +41,7 @@ func NewAPI(forceSSLMiddleware *ForceSSLMiddleware) http.Handler {
 }
 
 func TestUnconfiguredForceSSLMiddleware(t *testing.T) {
-	handler := NewAPI(&ForceSSLMiddleware{})
+	handler := NewAPI(&Middleware{})
 
 	req := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
 	recorded := test.RunRequest(t, handler, req)
@@ -51,7 +51,7 @@ func TestUnconfiguredForceSSLMiddleware(t *testing.T) {
 }
 
 func TestTrustXFPHeaderForceSSLMiddleware(t *testing.T) {
-	handler := NewAPI(&ForceSSLMiddleware{
+	handler := NewAPI(&Middleware{
 		TrustXFPHeader: true,
 	})
 
@@ -71,7 +71,7 @@ func TestTrustXFPHeaderForceSSLMiddleware(t *testing.T) {
 }
 
 func TestGetEnable301RedirectsForceSSLMiddleware(t *testing.T) {
-	handler := NewAPI(&ForceSSLMiddleware{
+	handler := NewAPI(&Middleware{
 		Enable301Redirects: true,
 	})
 
@@ -91,7 +91,7 @@ func TestGetEnable301RedirectsForceSSLMiddleware(t *testing.T) {
 func TestMessageForceSSLMiddleware(t *testing.T) {
 	message := "Custom message!"
 
-	handler := NewAPI(&ForceSSLMiddleware{
+	handler := NewAPI(&Middleware{
 		Message: message,
 	})
 
@@ -109,7 +109,7 @@ func TestMessageForceSSLMiddleware(t *testing.T) {
 }
 
 func TestValidGetHTTPSRequestForceSSLMiddleware(t *testing.T) {
-	handler := NewAPI(&ForceSSLMiddleware{})
+	handler := NewAPI(&Middleware{})
 
 	getRequest := test.MakeSimpleRequest("GET", "https://localhost/", simplePostData)
 	recordedGet := test.RunRequest(t, handler, getRequest)

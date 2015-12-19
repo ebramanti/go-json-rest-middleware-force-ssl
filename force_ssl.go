@@ -9,11 +9,12 @@ import (
 
 type ForceSSLMiddleware struct {
 	TrustXFPHeader     bool
+type Middleware struct {
 	Enable301Redirects bool
 	Message            string
 }
 
-func setDefaults(settings *ForceSSLMiddleware) {
+func setDefaults(settings *Middleware) {
 	if settings.Message == "" {
 		settings.Message = "SSL Required."
 	}
@@ -27,7 +28,7 @@ func isNotSecure(url *url.URL, xfpHeader string, trustXfpHeader bool) bool {
 	}
 }
 
-func (middleware *ForceSSLMiddleware) MiddlewareFunc(handler rest.HandlerFunc) rest.HandlerFunc {
+func (middleware *Middleware) MiddlewareFunc(handler rest.HandlerFunc) rest.HandlerFunc {
 	return func(writer rest.ResponseWriter, request *rest.Request) {
 		setDefaults(middleware)
 		goHTTPWriter := writer.(http.ResponseWriter)
