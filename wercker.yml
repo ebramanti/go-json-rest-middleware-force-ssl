@@ -1,0 +1,46 @@
+box: golang
+dev:
+  steps:
+    - internal/watch:
+        code: |
+          go build ./...
+          ./source
+        reload: true
+# Build definition
+build:
+  # The steps that will be executed on build
+  steps:
+    - setup-go-workspace
+
+    # golint step!
+    - wercker/golint
+
+    # Get dependencies for the project
+    - script:
+        name: go get
+        code: |
+          go get ./...
+
+    # Build the project
+    - script:
+        name: go build
+        code: |
+          go build ./...
+
+    # Test the project
+    - script:
+        name: go test
+        code: |
+          go test ./...
+
+deploy:
+  steps:
+    - setup-go-workspace
+
+    - script:
+        name: go get
+        code: |
+          go get ./...
+
+    - tcnksm/goveralls:
+        token: $COVERALLS_TOKEN
