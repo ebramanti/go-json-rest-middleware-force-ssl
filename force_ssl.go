@@ -30,6 +30,7 @@ func isNotSecure(url *url.URL, xfpHeader string, trustXfpHeader bool) bool {
 func (middleware *ForceSSLMiddleware) MiddlewareFunc(handler rest.HandlerFunc) rest.HandlerFunc {
 	return func(writer rest.ResponseWriter, request *rest.Request) {
 		setDefaults(middleware)
+		goHTTPWriter := writer.(http.ResponseWriter)
 
 		url := request.URL
 		xfpHeader := strings.ToLower(request.Header.Get("X-Forwarded-Proto"))
@@ -39,14 +40,14 @@ func (middleware *ForceSSLMiddleware) MiddlewareFunc(handler rest.HandlerFunc) r
 				redirectURL := request.URL
 				redirectURL.Scheme = "https"
 				http.Redirect(
-					writer.(http.ResponseWriter),
+					goHTTPWriter,
 					request.Request,
 					redirectURL.String(),
 					http.StatusMovedPermanently,
 				)
 			} else {
 				writer.WriteHeader(403)
-				writer.(http.ResponseWriter).Write([]byte(middleware.Message))
+				goHTTPWriter.Write([]byte(middleware.Message))
 			}
 		} else {
 			handler(writer, request)
