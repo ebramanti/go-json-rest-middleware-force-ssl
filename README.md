@@ -40,7 +40,7 @@ func main() {
 | ---------------------- | --------- | ------------- | ------------- |
 | **TrustXFPHeader**     | `bool`    | Trust `X-Forwarded-Proto` headers (this can allow a client to spoof whether they were using HTTPS) | `false` |
 | **Enable301Redirects** | `bool`    | Enables `301` redirects to the HTTPS version of the request. | `false` |
-| **Message**            | `String`  | Allows a custom response message when forcing SSL without redirect. | `SSL Required.` |
+| **Message**            | `string`  | Allows a custom response message when forcing SSL without redirect. | `SSL Required.` |
 
 ## Middleware Options Example
 
