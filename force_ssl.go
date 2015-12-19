@@ -7,11 +7,21 @@ import (
 	"strings"
 )
 
-type ForceSSLMiddleware struct {
-	TrustXFPHeader     bool
+// Middleware is a go-json-rest middleware. It requires all
+// requests to a go-json-rest server to be over SSL.
 type Middleware struct {
+	// Trust X-Forwarded-Proto headers (this could allow a client
+	// to spoof whether they were using HTTPS).
+	// Optional, defaults to false.
+	TrustXFPHeader bool
+
+	// Enables 301 redirects to the HTTPS version of the request.
+	// Optional, defaults to false.
 	Enable301Redirects bool
-	Message            string
+
+	// Allows a custom response message when forcing SSL without redirect.
+	// Optional, defaults to "SSL Required."
+	Message string
 }
 
 func setDefaults(settings *Middleware) {
@@ -28,6 +38,7 @@ func isNotSecure(url *url.URL, xfpHeader string, trustXfpHeader bool) bool {
 	return url.Scheme != "https"
 }
 
+// MiddlewareFunc makes forceSSL.Middleware implement the rest.Middleware interface.
 func (middleware *Middleware) MiddlewareFunc(handler rest.HandlerFunc) rest.HandlerFunc {
 	return func(writer rest.ResponseWriter, request *rest.Request) {
 		setDefaults(middleware)
