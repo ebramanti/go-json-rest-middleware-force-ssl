@@ -1,4 +1,4 @@
-package force_ssl
+package forceSSL
 
 import (
 	"crypto/tls"
