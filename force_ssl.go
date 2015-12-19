@@ -23,9 +23,9 @@ func setDefaults(settings *Middleware) {
 func isNotSecure(url *url.URL, xfpHeader string, trustXfpHeader bool) bool {
 	if trustXfpHeader {
 		return xfpHeader != "https"
-	} else {
-		return url.Scheme != "https"
 	}
+
+	return url.Scheme != "https"
 }
 
 func (middleware *Middleware) MiddlewareFunc(handler rest.HandlerFunc) rest.HandlerFunc {
@@ -47,7 +47,7 @@ func (middleware *Middleware) MiddlewareFunc(handler rest.HandlerFunc) rest.Hand
 					http.StatusMovedPermanently,
 				)
 			} else {
-				writer.WriteHeader(403)
+				writer.WriteHeader(http.StatusForbidden)
 				goHTTPWriter.Write([]byte(middleware.Message))
 			}
 		} else {
