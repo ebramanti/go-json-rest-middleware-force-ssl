@@ -1,34 +1,125 @@
 package forceSSL
 
 import (
-	"net/http"
-	"testing"
-
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ant0ine/go-json-rest/rest/test"
+	"net/http"
+	"testing"
 )
 
 type JSON map[string]interface{}
 
-func simpleEndpoint(w rest.ResponseWriter, r *rest.Request) {
-	w.WriteJson(JSON{
+var (
+	simplePostData = JSON{
 		"email":    "edward@example.com",
 		"password": "password",
-	})
+	}
+)
+
+func simpleGetEndpoint(w rest.ResponseWriter, r *rest.Request) {
+	w.WriteJson(simplePostData)
 }
 
-func NewAPI() http.Handler {
+func simplePostEndpoint(w rest.ResponseWriter, r *rest.Request) {
+	body := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{}
+	r.DecodeJsonPayload(&body)
+	w.WriteJson(body)
+}
+
+func NewAPI(forceSSLMiddleware *ForceSSLMiddleware) http.Handler {
 	api := rest.NewApi()
-	api.Use(&ForceSSLMiddleware{})
-	simpleEndpoint := rest.AppSimple(simpleEndpoint)
-	api.SetApp(simpleEndpoint)
+	api.Use(forceSSLMiddleware)
+	router, _ := rest.MakeRouter(
+		rest.Post("/", simplePostEndpoint),
+		rest.Get("/", simpleGetEndpoint),
+	)
+	api.SetApp(router)
 	return api.MakeHandler()
 }
 
 func TestUnconfiguredForceSSLMiddleware(t *testing.T) {
-	handler := NewAPI()
-	req := test.MakeSimpleRequest("GET", "http://localhost/", nil)
+	handler := NewAPI(&ForceSSLMiddleware{})
+
+	req := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
 	recorded := test.RunRequest(t, handler, req)
+
 	recorded.CodeIs(http.StatusForbidden)
 	recorded.BodyIs("SSL Required.")
+}
+
+func TestTrustXFPHeaderForceSSLMiddleware(t *testing.T) {
+	handler := NewAPI(&ForceSSLMiddleware{
+		TrustXFPHeader: true,
+	})
+
+	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	getRequest.Header.Set("X-Forwarded-Proto", "http")
+	recordedGet := test.RunRequest(t, handler, getRequest)
+
+	recordedGet.CodeIs(http.StatusForbidden)
+	recordedGet.BodyIs("SSL Required.")
+
+	postRequest := test.MakeSimpleRequest("POST", "http://localhost/", simplePostData)
+	postRequest.Header.Set("X-Forwarded-Proto", "http")
+	recordedPost := test.RunRequest(t, handler, postRequest)
+
+	recordedPost.CodeIs(http.StatusForbidden)
+	recordedPost.BodyIs("SSL Required.")
+}
+
+func TestGetEnable301RedirectsForceSSLMiddleware(t *testing.T) {
+	handler := NewAPI(&ForceSSLMiddleware{
+		Enable301Redirects: true,
+	})
+
+	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	getRequest.Header.Set("X-Forwarded-Proto", "http")
+	recordedGet := test.RunRequest(t, handler, getRequest)
+
+	recordedGet.CodeIs(http.StatusMovedPermanently)
+
+	postRequest := test.MakeSimpleRequest("POST", "http://localhost/", simplePostData)
+	postRequest.Header.Set("X-Forwarded-Proto", "http")
+	recordedPost := test.RunRequest(t, handler, postRequest)
+
+	recordedPost.CodeIs(http.StatusMovedPermanently)
+}
+
+func TestMessageForceSSLMiddleware(t *testing.T) {
+	message := "Custom message!"
+
+	handler := NewAPI(&ForceSSLMiddleware{
+		Message: message,
+	})
+
+	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	recordedGet := test.RunRequest(t, handler, getRequest)
+
+	recordedGet.CodeIs(http.StatusForbidden)
+	recordedGet.BodyIs(message)
+
+	postRequest := test.MakeSimpleRequest("POST", "http://localhost/", simplePostData)
+	recordedPost := test.RunRequest(t, handler, postRequest)
+
+	recordedPost.CodeIs(http.StatusForbidden)
+	recordedPost.BodyIs(message)
+}
+
+func TestValidGetHTTPSRequestForceSSLMiddleware(t *testing.T) {
+	handler := NewAPI(&ForceSSLMiddleware{})
+
+	getRequest := test.MakeSimpleRequest("GET", "https://localhost/", simplePostData)
+	recordedGet := test.RunRequest(t, handler, getRequest)
+
+	recordedGet.CodeIs(http.StatusOK)
+	recordedGet.BodyIs(`{"email":"edward@example.com","password":"password"}`)
+
+	postRequest := test.MakeSimpleRequest("POST", "https://localhost/", simplePostData)
+	recordedPost := test.RunRequest(t, handler, postRequest)
+
+	recordedPost.CodeIs(http.StatusOK)
+	recordedPost.BodyIs(`{"email":"edward@example.com","password":"password"}`)
 }
