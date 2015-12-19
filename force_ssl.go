@@ -3,7 +3,6 @@ package forceSSL
 import (
 	"github.com/ant0ine/go-json-rest/rest"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
@@ -30,12 +29,12 @@ func setDefaults(settings *Middleware) {
 	}
 }
 
-func isNotSecure(url *url.URL, xfpHeader string, trustXfpHeader bool) bool {
+func isNotSecure(request *rest.Request, xfpHeader string, trustXfpHeader bool) bool {
 	if trustXfpHeader {
 		return xfpHeader != "https"
 	}
 
-	return url.Scheme != "https"
+	return request.TLS == nil && request.URL.Scheme != "https"
 }
 
 // MiddlewareFunc makes forceSSL.Middleware implement the rest.Middleware interface.
@@ -44,10 +43,9 @@ func (middleware *Middleware) MiddlewareFunc(handler rest.HandlerFunc) rest.Hand
 		setDefaults(middleware)
 		goHTTPWriter := writer.(http.ResponseWriter)
 
-		url := request.URL
 		xfpHeader := strings.ToLower(request.Header.Get("X-Forwarded-Proto"))
 
-		if isNotSecure(url, xfpHeader, middleware.TrustXFPHeader) {
+		if isNotSecure(request, xfpHeader, middleware.TrustXFPHeader) {
 			if middleware.Enable301Redirects {
 				redirectURL := request.URL
 				redirectURL.Scheme = "https"
