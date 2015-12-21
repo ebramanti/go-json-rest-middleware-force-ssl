@@ -43,7 +43,7 @@ func NewAPI(forceSSLMiddleware *Middleware) http.Handler {
 func TestUnconfiguredForceSSLMiddleware(t *testing.T) {
 	handler := NewAPI(&Middleware{})
 
-	req := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	req := test.MakeSimpleRequest("GET", "http://localhost/", nil)
 	recorded := test.RunRequest(t, handler, req)
 
 	recorded.CodeIs(http.StatusForbidden)
@@ -55,7 +55,7 @@ func TestTrustXFPHeaderForceSSLMiddleware(t *testing.T) {
 		TrustXFPHeader: true,
 	})
 
-	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", nil)
 	getRequest.Header.Set("X-Forwarded-Proto", "http")
 	recordedGet := test.RunRequest(t, handler, getRequest)
 
@@ -75,7 +75,7 @@ func TestGetEnable301RedirectsForceSSLMiddleware(t *testing.T) {
 		Enable301Redirects: true,
 	})
 
-	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", nil)
 	getRequest.Header.Set("X-Forwarded-Proto", "http")
 	recordedGet := test.RunRequest(t, handler, getRequest)
 
@@ -95,7 +95,7 @@ func TestMessageForceSSLMiddleware(t *testing.T) {
 		Message: message,
 	})
 
-	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", simplePostData)
+	getRequest := test.MakeSimpleRequest("GET", "http://localhost/", nil)
 	recordedGet := test.RunRequest(t, handler, getRequest)
 
 	recordedGet.CodeIs(http.StatusForbidden)
@@ -111,7 +111,7 @@ func TestMessageForceSSLMiddleware(t *testing.T) {
 func TestValidGetHTTPSRequestForceSSLMiddleware(t *testing.T) {
 	handler := NewAPI(&Middleware{})
 
-	getRequest := test.MakeSimpleRequest("GET", "https://localhost/", simplePostData)
+	getRequest := test.MakeSimpleRequest("GET", "https://localhost/", nil)
 	recordedGet := test.RunRequest(t, handler, getRequest)
 
 	recordedGet.CodeIs(http.StatusOK)
