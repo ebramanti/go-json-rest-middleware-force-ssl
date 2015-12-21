@@ -26,7 +26,7 @@ import (
 
 func main() {
     api := rest.NewApi()
-    api.Use(forceSSL.Middleware{}) // struct with options
+    api.Use(&forceSSL.Middleware{}) // struct with options
     api.SetApp(rest.AppSimple(func(w rest.ResponseWriter, r *rest.Request) {
         w.WriteJson(map[string]string{"body": "Hello World!"})
     }))
@@ -42,12 +42,33 @@ func main() {
 | **Enable301Redirects** | `bool`    | Enables `301` redirects to the HTTPS version of the request. | `false` |
 | **Message**            | `string`  | Allows a custom response message when forcing SSL without redirect. | `SSL Required.` |
 
-## Middleware Options Example
+### Middleware Options Example
 
 ```go
 api.Use(forceSSL.Middleware{
   TrustXFPHeader: true,
   Enable301Redirects: true,
   Message: "We are unable to process your request over HTTP."
+})
+```
+
+### Per-route SSL Settings
+Using `rest.IfMiddleware` in `go-json-rest`, it is possible to force SSL on a per-route basis.
+
+#### Example Usage
+```go
+forceSSLMiddleware := &forceSSL.Middleware{
+	TrustXFPHeader:     true,
+	Enable301Redirects: false,
+	Message:            "Login required for Admin portal.",
+}
+api := rest.NewApi()
+
+// Conditionally force certain routes to use forceSSLMiddleware
+api.Use(&rest.IfMiddleware{
+	Condition: func(request *rest.Request) bool {
+		return request.URL.Path == "/admin"
+	},
+	IfTrue: forceSSLMiddleware,
 })
 ```
